@@ -36,8 +36,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
 
         public MainWindow()
         {
-            //estimation = new Rating(200);
-            estimation = new Rating();
+            estimation = new Rating(1000);
             mot = estimation.Moteur;
             IA = new Reflexion(estimation.Moteur, true);
             InitializeComponent();
@@ -187,6 +186,10 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             {
                 EvaluationEnCours = true;
                 await Evaluation();
+            }
+            else
+            {
+                MessageBox.Show("On pause la partie (si possible)");
             }
             
             
@@ -382,7 +385,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
         {
             //string choix = Promotion_choix();
             PieceWPF nvlle_piece = new PieceWPF();
-            int choix = Promotion_choix();
+            int choix = Promotion_choix_automatique(carré);
             nvlle_piece.piece_logique = mot.Promotion(choix, carré);
 
             //nvlle_piece.piece_logique.numéro = mot.Blanc ? 102 : 2;   //Blanc a changé avant la procédure, noir signifie donc blanc et inversement
@@ -439,7 +442,11 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             return choix;
         }
 
-
+        public int Promotion_choix_automatique(int carré)
+        {
+            int choix = estimation.Engine_1.Promotion(carré);
+            return choix;
+        }
 
 
 
@@ -454,6 +461,8 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
         public async Task<bool> Evaluation()
         {
             bool Couleur = true;
+            int nombres_victoires = 0;
+            int nombre_nulles = 0;
             for (int partie = 0; partie < estimation.Parties.Length; partie++)
             {
                 float résultat = 0;
@@ -471,7 +480,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 Debug.WriteLine($"Partie n°{partie} terminée, résultat = {résultat}");
                 Couleur = !Couleur;   //On alterne les couleurs à chaque partie
             }
-            Sauvegarde_database.Sauvegarde_affrontement(estimation.Parties, estimation.Resultats, estimation.Score, 1, 1);
+            Sauvegarde_database.Sauvegarde_affrontement(estimation.Parties, estimation.Resultats, estimation.Score, 2, 1);
             EvaluationEnCours = false;
             return true;
         }
@@ -494,7 +503,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                     vainqueur = Realisation_coup_robot(coup_2.départ, coup_2.arrivee);
                 }
                 Couleur = !Couleur;
-                await Task.Delay(1000);
+                await Task.Delay(10);
             }
             estimation.Parties[index_partie] = new List<string>();
             estimation.Parties[index_partie] = mot.Partie;

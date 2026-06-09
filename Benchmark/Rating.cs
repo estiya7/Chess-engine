@@ -257,10 +257,16 @@ namespace Benchmark
         private static void Main(string[] args)
         {
             PerftMoteur();
-            //int elo = 100;
-            //string nom_2 = "random";
-            //Sauvegarde_database.Sauvegarde_programme(nom_2, elo);
 
+
+            //Pour mettre le nom d'un programme dans la base
+            /*
+            int elo = 100;
+            string nom_1 = "random";
+            string nom_2 = "Matérialiste";
+            Sauvegarde_database.Sauvegarde_programme(nom_1, elo);
+            Sauvegarde_database.Sauvegarde_programme(nom_2, elo);
+            */
             //TEST POUR LA DATABASE QUI MARCHE
             /*
             List<string>[] parties = new List<string>[3];

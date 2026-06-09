@@ -14,7 +14,7 @@ namespace Benchmark
         {
             int max_iter = 100;
 
-            string ajout_partie = "INSERT INTO Partie (1v1, Resultat, Coups) VALUES (@id_bataille, @res, @str_partie);";
+            string ajout_partie = "INSERT INTO Partie (id_affrontement, Resultat, Coups) VALUES (@id_bataille, @res, @str_partie);";
             MySqlCommand commande = new MySqlCommand(ajout_partie, connexion);
             string partie_entiere = "";
 
@@ -45,6 +45,25 @@ namespace Benchmark
 
         public static void Sauvegarde_affrontement(List<string>[] parties, float[] résultats, float score, int id_moteur1, int id_moteur2)
         {
+            int nb_wins = 0;
+            int nb_draws = 0;
+            int nb_losses = 0;
+            int nb_parties = résultats.Length;
+            for (int i = 0; i < nb_parties; i++)
+            {
+                if (résultats[i] == 1)
+                {
+                    nb_wins++;
+                }
+                else if (résultats[i] == 0)
+                {
+                    nb_losses++;
+                }
+                else
+                {
+                    nb_draws++;
+                }
+            }
             MySqlConnection connexion = null;
             try
             {
@@ -55,8 +74,17 @@ namespace Benchmark
                 Debug.WriteLine("Connexion à la base de données impossible : " + ex);
                 return;
             }
-            string affrontement = "INSERT INTO Affrontement (Programme_1, Programme_2, Score) VALUES (@mot_1, @mot_2, @score_total); SELECT LAST_INSERT_ID();";
+
+            string affrontement = "INSERT INTO Affrontement " +
+                "(Programme_1, Programme_2, Nombre_parties, Victoires_prgm_1, Nulles, Victoires_prgm_2, Score) " +
+                "VALUES (@mot_1, @mot_2, @total_parties, @score_reflexion, @score_neutre, @score_comparaison, @score_total);" +
+                " SELECT LAST_INSERT_ID();";
             MySqlCommand commande = new MySqlCommand(affrontement, connexion);
+
+            commande.Parameters.AddWithValue("@total_parties", nb_parties);
+            commande.Parameters.AddWithValue("@score_reflexion", nb_wins);
+            commande.Parameters.AddWithValue("@score_neutre", nb_draws);
+            commande.Parameters.AddWithValue("@score_comparaison", nb_losses);
             commande.Parameters.AddWithValue("@score_total", score);
             commande.Parameters.AddWithValue("@mot_1", id_moteur1);
             commande.Parameters.AddWithValue("@mot_2", id_moteur2);

@@ -321,7 +321,7 @@ namespace Regles
             }
             return 7;
         }
-        public string Notation_coup(int piece, int piece_prise, int carré_précédent, int carré, bool compteur)
+        public string Notation_coup(int piece, int piece_prise, int carré_précédent, int carré)
         {
             int piece_num = piece % 10;
             string notation = "";
@@ -340,17 +340,6 @@ namespace Regles
             if (piece_prise > 0)            //Rajoute les captures de piece
             {
                 notation += "x";
-            }
-            if (compteur == true)
-            {
-                if (notation.Length == 1)
-                {
-                    Compteur_50coups++;   //Si c'est un pion, longueur = 0 (si pas prise) et si pièce/pion prend, longueur = 2. Si pièce bouge sans prendre, longueur = 1
-                }
-                else
-                {
-                    Compteur_50coups = 0;
-                }
             }
             if (EnPassantBool == true)  //Rajoute la capture d'en passant
             {
@@ -1221,7 +1210,7 @@ namespace Regles
             if (roque_long_noir && (carré_précédent == 56 || carré_précédent == 60 || carré == 56)) { Roque_long_noir = false; }
             if (roque_noir && (carré_précédent == 63 || carré_précédent == 60 || carré == 63)) { Roque_noir = false; }
 
-            Partie.Add(Notation_coup(piece, piece_prise, carré_précédent, carré, true));   //Ajoute le dernier coup au tableau de notation
+            Partie.Add(Notation_coup(piece, piece_prise, carré_précédent, carré));   //Ajoute le dernier coup au tableau de notation
             DernierCoup = Partie[Partie.Count - 1];
 
             if (piece == 1 || piece == 101)
@@ -1239,6 +1228,7 @@ namespace Regles
 
             if (Vérification_pat())   //Aucun coup légal
             {
+                //Debug.WriteLine($"Partie terminée !! Dernier coup : {carré_précédent} --> {carré}");
                 PartieFinie = true;
                 if (InCheck)
                 {
@@ -1268,13 +1258,14 @@ namespace Regles
                 Bitboards_blanc[0] &= ~(1UL << carré_départ);   //On force 0 à la case de départ
                 Bitboards_noir[0] &= ~Bitboards_blanc[0];    //On met à jour les pièces noir, noir = noir & ~blanc;
 
-                if ((piece_prise & (0x_00_00_00_04)) != 0)  //Pièce noir
+                if (piece_prise > 75)  //Pièce noir
                 {
                     Bitboards_noir[piece_prise - 100] &= ~(1ul << carré_arrivée);  //Bitboard correspondants à la pièce
                 }
 
                 Bitboards_blanc[piece_active] |= 1ul << carré_arrivée;
                 Bitboards_blanc[piece_active] &= ~(1ul << carré_départ);
+                compteur_50coups = 0;
             }
             else if (piece_active > 75)
             {
@@ -1289,9 +1280,18 @@ namespace Regles
 
                 Bitboards_noir[piece_active - 100] |= 1ul << carré_arrivée;
                 Bitboards_noir[piece_active - 100] &= ~(1ul << carré_départ);
+                compteur_50coups = 0;
             }
             Pieces_long = Bitboards_blanc[0] | Bitboards_noir[0];
 
+            if (piece_prise == 50 && piece_active != 6 && piece_active != 106)
+            {
+                compteur_50coups++;
+            }
+            else
+            {
+                compteur_50coups = 0;
+            }
             //Mise à jour des variables globales pour les cases des rois
             if (piece_active == 1)
             {
@@ -1838,50 +1838,28 @@ namespace Regles
             if (Blanc)
             {
                 ulong coups_légaux_roi_blanc = légaux_roi(CaseRoiBlanc, CaseRoiBlanc % 8) & ~p_amis & ~attaque;
-                //Debug.WriteLine($"Il reste plus que le roi blanc : légaux = {(légaux_roi(CaseRoiBlanc, CaseRoiBlanc % 8) & ~p_amis & ~attaque):B64}");
                 if (coups_légaux_roi_blanc == 0ul)  //Le roi n'a pas de coups
                 {
-                    //Debug.WriteLine("On return true, le roi blanc peut pas bouger");
                     return true;
                 }
                 coups_légaux_roi_blanc &= PatCoupIllégalDosPiece(CaseRoiBlanc);
                 if (coups_légaux_roi_blanc == 0ul)
                 {
-                    //Debug.WriteLine("On return true, le roi blanc peut pas bouger (deuxième vague)");
                     return true;
                 }
-                //Debug.WriteLine("Il reste des coups au roi blanc");
                 return false;
             }
             ulong coups_légaux_roi_noir = légaux_roi(CaseRoiNoir, CaseRoiNoir % 8) & ~p_amis & ~attaque;
-            //Debug.WriteLine($"Il reste plus que le roi noir : légaux = {(légaux_roi(CaseRoiNoir, CaseRoiNoir % 8) & ~p_amis & ~attaque):B64}");
             if (coups_légaux_roi_noir == 0ul)
             {
-                //Debug.WriteLine("On return true, le roi noir peut pas bouger");
                 return true;
             }
             coups_légaux_roi_noir &= PatCoupIllégalDosPiece(CaseRoiBlanc);
             if (coups_légaux_roi_noir == 0ul)
             {
-                //Debug.WriteLine("On return true, le roi noir peut pas bouger (deuxième vague)");
                 return true;
             }
             return false;
-            /*
-            ulong[] coups = Calcul_légaux();
-            int total = 0;
-            int rang = 0;
-            while (total == 0 && rang < 64)
-            {
-                total = BitOperations.PopCount(coups[rang]);
-                rang++;
-            }
-            if (total == 0)
-            {
-                //Debug.WriteLine("Il y a aucun coup pour les noirs");
-                return true;
-            }
-            */
 
         }
 

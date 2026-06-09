@@ -190,20 +190,22 @@ namespace IA_echecs
 
         public Coup MeilleurCoup()
         {
-            Debug.WriteLine($"On commence à trouver le meilleur coup avec couleur = {mot.Blanc}");
+            //Debug.WriteLine($"\n\n\n\n\n\n\nOn commence à trouver le meilleur coup avec couleur = {mot.Blanc}\n\n");
 
             mot_test = CopieMoteur();
 
-            int profondeur_max = 2;
+            int profondeur_max = 1;
             Coup coup = SetupSearch(profondeur_max, mot.Blanc);
 
-            Debug.WriteLine("On à finir de trouver le meilleur coup");
+            //Debug.WriteLine("\n\nOn à finir de trouver le meilleur coup\n\n\n\n\n\n\n\n\n\n");
             return coup;
         }
 
         public Coup SetupSearch(int profondeur_max, bool maximiser)
         {
             int eval_opti = maximiser ? int.MinValue : int.MaxValue;
+            int alpha = int.MinValue;
+            int beta = int.MaxValue;
             Coup coup_opti = MoteurTest.CreerCoup(0, 0);
 
             Coup[] coups_initiaux = MoteurTest.Calcul_légaux();
@@ -227,44 +229,87 @@ namespace IA_echecs
                     return coup;
                 }
 
-                int eval = Search(profondeur_max, int.MinValue, int.MaxValue, maximiser);
-                Debug.WriteLine($"Pour le coup {coup.départ} --> {coup.arrivee}, on eval = {eval}");
+                int eval = Search(profondeur_max, alpha, beta, !maximiser);
+                //Debug.WriteLine($"Pour le coup {coup.départ} --> {coup.arrivee}, on eval = {eval}");
                 MoteurTest.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, promotion, rb, rlb, rn, rln, compt50coups);
 
-                if ((eval >= eval_opti) == maximiser)
+                if (maximiser)
                 {
-                    eval_opti = eval;
-                    coup_opti = coup;
+                    if (eval > alpha)
+                    {
+                        alpha = eval;
+                        coup_opti = coup;
+                    }
+                    else if (eval == alpha)
+                    {
+                        int random = Choix_random(10);
+                        if (random == 0)
+                        {
+                            coup_opti = coup;
+                        }
+                    }
+                }
+                else
+                {
+                    if (eval < beta)
+                    {
+                        beta = eval;
+                        coup_opti = coup;
+                    }
+                    else if (eval == beta)
+                    {
+                        int random = Choix_random(10);
+                        if (random == 0)
+                        {
+                            coup_opti = coup;
+                        }
+                    }
                 }
             }
             return coup_opti;
         }
 
 
-        //ATTENTION : Quand la profondeur change, il faut update certaines comparaisons
         public int Search(int profondeur, int alpha, int beta, bool maximiser)   //Recherche minimax, retourne la best eval d'une profondeur
         {
+            //Debug.WriteLine($"On recherche en profondeur {profondeur} avec alpha = {alpha}, beta = {beta}, maximiser = {maximiser} et blanc = {MoteurTest.Blanc}");
             if (profondeur == 0)
             {
-                return Evaluation();
+                int eval_finale_depth0 = Evaluation();
+                return eval_finale_depth0;
             }
             Coup[] coups_disponibles = MoteurTest.Calcul_légaux();
             int nombre_max = MoteurTest.NombreLegaux;
             for (int rang = 0; rang < nombre_max; rang++)
             {
                 Coup coup_joué = coups_disponibles[rang];
-                bool rb = MoteurTest.Roque_blanc; bool rlb = MoteurTest.Roque_long_blanc; bool rn = MoteurTest.Roque_noir; bool rln = MoteurTest.Roque_long_noir;
-                string dernier_coup = MoteurTest.DernierCoup; int compt50coups = MoteurTest.Compteur_50coups;
+                bool rb = MoteurTest.Roque_blanc;
+                bool rlb = MoteurTest.Roque_long_blanc;
+                bool rn = MoteurTest.Roque_noir;
+                bool rln = MoteurTest.Roque_long_noir;
+                string dernier_coup = MoteurTest.DernierCoup;
+                int compt50coups = MoteurTest.Compteur_50coups;
+                int eval_coup_joué = 0;
                 int piece_prise = MoteurTest.pieces[coup_joué.arrivee];
 
                 bool checkmate = MoteurTest.Realisation_coup_logique(coup_joué.départ, coup_joué.arrivee);
-                if (checkmate)
-                {
-                    return MoteurTest.Blanc ? int.MinValue : int.MaxValue;
-                }
                 bool promotion = MoteurTest.Promotion_bool;
 
-                int eval_coup_joué = Search(profondeur - 1, alpha, beta, !maximiser);   //Eval max des tours précédents
+                if (MoteurTest.PartieFinie)
+                {
+                    if (checkmate)
+                    {
+                        eval_coup_joué = MoteurTest.Blanc ? int.MinValue : int.MaxValue;  //Blanc <=> echec et mat noir et inverse
+                    }
+                    else
+                    {
+                        eval_coup_joué = 0;
+                    }
+                }
+                else
+                {
+                    eval_coup_joué = Search(profondeur - 1, alpha, beta, !maximiser);   //Eval max des tours précédents
+                }
 
                 MoteurTest.Annulation_Realisation_coup(coup_joué.arrivee, coup_joué.départ, piece_prise, promotion, rb, rlb, rn, rln, compt50coups);
 
@@ -287,7 +332,8 @@ namespace IA_echecs
                     break;
                 }
             }
-            return maximiser ? alpha : beta;
+            int eval_finale = maximiser ? alpha : beta;
+            return eval_finale;
         }
 
 
@@ -313,7 +359,7 @@ namespace IA_echecs
 
             for (int square = 0; square < 64; square++)
             {
-                int piece = mot.pieces[square];
+                int piece = MoteurTest.pieces[square];
                 if (piece < 10)
                 {
                     materiel += Valeur_piece(piece);
@@ -333,7 +379,11 @@ namespace IA_echecs
             return random.Next(max);       //Index choisi au hasard parmi la liste
         }
 
-
+        //Pour l'instant, retourne toujours dame
+        public int Promotion(int carré)
+        {
+            return 0;
+        }
 
 
         public Coup CoupRandom()
