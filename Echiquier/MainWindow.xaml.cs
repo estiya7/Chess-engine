@@ -1,5 +1,6 @@
 ﻿using Benchmark;
 using IA_echecs;
+using Org.BouncyCastle.Tls;
 using Regles;
 using System.Diagnostics;
 using System.IO;
@@ -19,6 +20,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using static Echiquier.MainWindow;
+using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 using static System.Formats.Asn1.AsnWriter;
 //using AffichagePartie;
 
@@ -29,20 +31,19 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
     /// </summary>
     public partial class MainWindow : Window
     {
-        public Rating estimation;
         public Moteur mot;
         public Reflexion IA;
         public bool EvaluationEnCours = false;
+        public int usage;
 
         public MainWindow()
         {
-            estimation = new Rating(1000);
-            mot = estimation.Moteur;
-            IA = new Reflexion(estimation.Moteur, true);
+            mot = new Moteur();
+            IA = new Reflexion(mot, true);
             InitializeComponent();
             CreateChessboard();
             SetPieces();
-            mot.AffichageBoard();
+            ModeUtilisation();
         }
 
         public Border[] cases = new Border[64];
@@ -80,6 +81,54 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 }
             }
         }
+
+        public bool CreerBoutonsAnalyse()
+        {
+            //On ajoute une nouvelle colonne à l'échiquier pour afficher les boutons
+            Echiquier.ColumnDefinitions.Add(new ColumnDefinition());
+
+            //Création du bouton d'avancer (procédure liée : AvancerReplay())
+            Button avancer = new Button();
+            avancer.Height = 30;
+            avancer.Width = 30;
+            avancer.Content = "▶";
+            avancer.HorizontalAlignment = HorizontalAlignment.Left;
+            avancer.VerticalAlignment = VerticalAlignment.Bottom;
+            avancer.Click += AvancerReplay;
+
+            //Création du bouton de retour en arrière (procédure liée : ReculerReplay())
+            Button reculer = new Button();
+            reculer.Height = 30;
+            reculer.Width = 30;
+            reculer.Content = "◀";
+            reculer.HorizontalAlignment = HorizontalAlignment.Right;
+            reculer.VerticalAlignment = VerticalAlignment.Bottom;
+            reculer.Click += ReculerReplay;
+
+            //Création de la Grid qui contient les deux boutons
+            Grid panneau_analyse = new Grid();
+            panneau_analyse.ColumnDefinitions.Add(new ColumnDefinition());
+            panneau_analyse.ColumnDefinitions.Add(new ColumnDefinition());
+            panneau_analyse.RowDefinitions.Add(new RowDefinition());
+            panneau_analyse.Height = 90;
+            panneau_analyse.Width = 65;
+
+            //Affiliation des boutons à la grid
+            Grid.SetRow(avancer, 0);
+            Grid.SetColumn(avancer, 1);
+            Grid.SetColumn(reculer, 0);
+            Grid.SetRow(reculer, 0);
+            panneau_analyse.Children.Add(reculer);
+            panneau_analyse.Children.Add(avancer);
+
+            //Affiliation de la grid à l'échiquier principal
+            Grid.SetColumn(panneau_analyse, Echiquier.RowDefinitions.Count - 1);
+            Grid.SetRow(panneau_analyse, Echiquier.Children.Count - 1);
+            Echiquier.Children.Add(panneau_analyse);
+
+            return true; //Nécessaire pour pouvoir attendre la fin de cette fonction avant de continuer
+        }
+
 
         public struct PieceWPF
         {
@@ -144,7 +193,61 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             ResetBoard();
         }
 
+        //Peut choisir entre rejouer une partie (avec ou sans debug ?), faire un affrontement ou tester manuellement
+        //Je ferai pas du front-end mdr ça va être un squelette le truc
+        public void ModeUtilisation()
+        {
+            usage = 0;
 
+            string manuel = "Jouer normalement";
+            string bataille = "Faire un affrontement";
+            string replay = "Revoir une partie";
+
+            Window mode = new Window();
+            mode.Width = 300;
+            mode.Height = 175;
+            mode.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
+            TextBlock Titre = new TextBlock();
+            Titre.Text = "Mode d'utilisation de l'affichage ?";
+            Titre.Height = 25;
+            Titre.Width = 280;
+            Titre.TextAlignment = TextAlignment.Center;
+
+            ListBox options = new ListBox();
+            options.Width = 280;
+            options.Height = 150;
+            options.Margin = new Thickness(5);
+            options.ItemsSource = new string[] { bataille, manuel, replay };
+            options.SelectionChanged += (s, e) =>
+            {
+                string utilisation = (string)((ListBox)s).SelectedItem;
+                if (utilisation == "Jouer normalement")
+                {
+                    usage = 0;
+                    mode.Close();
+                }
+                else if (utilisation == "Faire un affrontement")
+                {
+                    usage = 11;
+                    mode.Close();
+                    LancerEvaluation();
+                }
+                else
+                {
+                    usage = 222;
+                    mode.Close();
+                    ReplayPartie();
+                }
+            };
+
+            StackPanel ecran_affichage = new StackPanel();
+            ecran_affichage.Children.Add(Titre);
+            ecran_affichage.Children.Add(options);
+
+            mode.Content = ecran_affichage;
+            mode.ShowDialog();
+        }
 
 
 
@@ -177,24 +280,25 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             //}
         }
 
-
         public async void CaseCliquée(object objet, RoutedEventArgs touche)  //Réaction à chaque clic sur une case
         {
             //Système de partie automatique
 
-            if (EvaluationEnCours == false)
+            if (usage == 0) //Partie normale
             {
-                EvaluationEnCours = true;
-                await Evaluation();
+                await PartieManuelle(objet, touche);
+            }
+            else if (usage == 11)
+            {
+                LancerEvaluation();
             }
             else
             {
-                MessageBox.Show("On pause la partie (si possible)");
+                ReplayPartie();
             }
-            
-            
-            //Système de partie manuelle
-            /*
+        }
+        public async Task<bool> PartieManuelle(object objet, RoutedEventArgs touche)
+        {
             Button bouton = (Button)objet;
             PieceWPF piece = (PieceWPF)bouton.Tag;
             //obtient les coordonnées de la case de la pièce
@@ -204,20 +308,217 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             int carré = ligne * 8 + colonne;            //de 0 à 63, de A1 à H1, puis de A2 à H2 etc
             if (((SolidColorBrush)bouton.Background).Color == Color.FromRgb(180, 64, 64))   //Un coup légal a une couleur de fond différente
             {
-                //IA.Evaluation(mot.Blanc);
                 Realisation_coup(carré_précédent, carré);   //On déplace la pièce cliquée (couleur = blanc et passe à noir dans la fonction)
-                await Task.Delay(500);
-                //(int départ, int arrivée) coup = IA.MeilleurCoup();
-                //Realisation_coup_robot(coup.départ, coup.arrivée);   //couleur = noir et passe à blanc
             }
             else
             {
                 Affichage_légaux(bouton, piece, carré);   //Si la case sélectionné ne correspond pas à un coup jouable
             }
-            */
+            await Task.Delay(200);
+            return true;
+        }
+
+        public void LancerEvaluation()
+        {
+            if (EvaluationEnCours == false)
+            {
+                EvaluationEnCours = true;
+                Evaluation();
+            }
+            else
+            {
+                //On affiche le résultat partiel
+
+            }
+        }
+
+        public void ReplayPartie()
+        {
+            CreerBoutonsAnalyse();
+
+            int affrontement = ChoixAffrontementReplay();
+
+            (string? partie, float resultat) partie_a_jouer = SelectionPartieReplay(affrontement);
+
+            if (partie_a_jouer.partie == null)
+            {
+                MessageBox.Show("Partie non trouvée, sortie du menu");
+                Close();
+                return;
+            }
+
+            Moteur.Coup[] coups_partie = ConversionStringCoups(partie_a_jouer.partie);
+
+            for (int coup = 0; coup < coups_partie.Length; coup++)
+            {
+
+            }
         }
 
 
+        private int ChoixAffrontementReplay()
+        {
+            int affrontement = 0;
+
+            int nb_affrontement_max = Sauvegarde_database.NombreMaxAffrontement();
+
+            Window fenetre = new Window();
+            fenetre.Height = 175;
+            fenetre.Width = 400;
+            fenetre.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
+            TextBlock titre = new TextBlock();
+            titre.Text = $"Choisir l'id de l'affrontement à étudier (maximum : {nb_affrontement_max})";
+            titre.Height = 25;
+            titre.Width = 400;
+
+            TextBox textbox = new TextBox();
+            textbox.Height = 50;
+            textbox.Width = 400;
+            textbox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    try
+                    {
+                        int affrontement_choisi = Convert.ToInt32(textbox.Text);
+                        if (affrontement_choisi <= nb_affrontement_max)
+                        {
+                            affrontement = affrontement_choisi;
+                            fenetre.Close();
+                        }
+                        else
+                        {
+                            MessageBox.Show("L'affrontement selectionné n'est pas trouvé");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("La valeur de rentrée ne correspond pas à un affrontement existant. " + ex.ToString());
+                    }
+                }
+            };
+            StackPanel ecran_affichage = new StackPanel();
+            ecran_affichage.Children.Add(titre);
+            ecran_affichage.Children.Add(textbox);
+
+            fenetre.Content = ecran_affichage;
+            fenetre.ShowDialog();
+
+            return affrontement;
+        }
+
+        private (string?, float) SelectionPartieReplay(int id_affrontement)
+        {
+            int num_partie = 0;
+            (string? partie, float resultat) partie_choisie = (null, -1);
+            int Nb_parties_max = Sauvegarde_database.NombrePartiesDansAffrontement(id_affrontement);
+            if (Nb_parties_max < 1)
+            {
+                return partie_choisie;
+            }
+            Window choix_partie = new Window();
+            choix_partie.Width = 400;
+            choix_partie.Height = 150;
+            choix_partie.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
+            TextBlock Titre = new TextBlock();
+            Titre.Width = 400;
+            Titre.Height = 30;
+
+            ListBox liste = new ListBox();
+            liste.Height = 100;
+            liste.Width = 400;
+            liste.ItemsSource = new string[] { "aléatoire", "partie spécifique (à préciser)" };
+            liste.SelectionChanged += (s, e) =>
+            {
+                if ((string)liste.SelectedItem == "aléatoire")
+                {
+                    Random random = new Random();
+                    num_partie = random.Next(Nb_parties_max);
+                    if (num_partie >= 0)
+                    {
+                        string? déroulement_partie = Sauvegarde_database.CoupsPartie(num_partie, id_affrontement);
+                        
+                        if (déroulement_partie != null)
+                        {
+                            float resultat = Sauvegarde_database.ResultatPartie(num_partie, id_affrontement);
+                            partie_choisie = (déroulement_partie, resultat);
+                        }
+                    }
+                }
+                else
+                {
+                    num_partie = NumPartieDansAffrontement(id_affrontement, Nb_parties_max);
+                    if (num_partie >= 0)
+                    {
+                        string? déroulement_partie = Sauvegarde_database.CoupsPartie(num_partie, id_affrontement);
+                        if (déroulement_partie != null)
+                        {
+                            float resultat = Sauvegarde_database.ResultatPartie(num_partie, id_affrontement);
+                            partie_choisie = (déroulement_partie, resultat);
+                        }
+                    }
+                }
+            };
+
+            StackPanel affichage = new StackPanel();
+            affichage.Children.Add(Titre);
+            affichage.Children.Add(liste);
+
+            choix_partie.Content = affichage;
+            choix_partie.ShowDialog();
+
+            return partie_choisie;
+        }
+
+        private int NumPartieDansAffrontement(int id_affrontement, int nombre_max)
+        {
+            int partie = 0;
+            bool erreur = false;
+            TextBlock titre = new TextBlock();
+            titre.Text = $"Choisir l'id de la partie à étudier (maximum : {nombre_max})";
+
+            TextBox textbox = new TextBox();
+            textbox.PreviewTextInput += (s, e) =>
+            {
+                e.Handled = char.IsDigit(e.Text[0]) == false;   //Si c'est bien un numéro on le prend
+            };
+            textbox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    try
+                    {
+                        int partie_choisi = Convert.ToInt32(textbox.Text);
+                        if (partie_choisi <= nombre_max)
+                        {
+                            partie = partie_choisi;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("La valeur de rentrée ne correspond pas à un affrontement existant. " + ex.ToString());
+                        erreur = true;
+                    }
+                }
+            };
+            if (erreur)
+            {
+                return -1;
+            }
+            return partie;
+
+        }
+        private async void AvancerReplay(object case_cliquee, EventArgs args)
+        {
+
+        }
+
+        private async void ReculerReplay(object case_cliquee, EventArgs args)
+        {
+
+        }
 
         //Déplace la pièce en prenant compte des roques, des en passant et des promotions
         public bool Realisation_coup(int carré_précédent, int carré)
@@ -444,7 +745,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
 
         public int Promotion_choix_automatique(int carré)
         {
-            int choix = estimation.Engine_1.Promotion(carré);
+            int choix = IA.Promotion(carré);
             return choix;
         }
 
@@ -457,18 +758,73 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
         }
 
 
+        public int NombrePartiesPourEvaluation()
+        {
+            int nombre_partie = -1;
 
+            Window fenetre = new Window();
+            fenetre.Height = 120;
+            fenetre.Width = 400;
+            fenetre.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
+            TextBlock titre = new TextBlock();
+            titre.Text = $"Choisir le nombre de parties pour l'affrontement qui va avoir lieu)";
+            titre.Height = 25;
+            titre.Width = 400;
+
+            TextBox textbox = new TextBox();
+            textbox.Height = 50;
+            textbox.Width = 200;
+            textbox.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    try
+                    {
+                        int nombre_choisi = Convert.ToInt32(textbox.Text);
+                        if (nombre_choisi > 0 && nombre_choisi % 2 == 0)
+                        {
+                            nombre_partie = nombre_choisi;
+                            fenetre.Close();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Nombre de parties invalide (RAPPEL : il faut un nombre POSITIF ET PAIR)");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("La valeur doit être POSITIVE et PAIRE. " + ex.ToString());
+                    }
+                }
+            };
+
+            StackPanel ecran_affichage = new StackPanel();
+            ecran_affichage.Children.Add(titre);
+            ecran_affichage.Children.Add(textbox);
+
+            fenetre.Content = ecran_affichage;
+            fenetre.ShowDialog();
+
+            return nombre_partie;
+        }
         public async Task<bool> Evaluation()
         {
+            int nombre_parties_a_jouer = NombrePartiesPourEvaluation();
+            if (nombre_parties_a_jouer < 0)
+            {
+                Debug.WriteLine("Evaluation impossible à faire, nombre de parties à jouer non conforme");
+                return false;
+            }
+
+            Rating estimation = new Rating(mot, nombre_parties_a_jouer);
             bool Couleur = true;
-            int nombres_victoires = 0;
-            int nombre_nulles = 0;
             for (int partie = 0; partie < estimation.Parties.Length; partie++)
             {
                 float résultat = 0;
                 try
                 {
-                    résultat = await FairePartie(Couleur, partie);   //Donne le résultat du blanc, 1, 0 ou 0.5
+                    résultat = await FairePartie(estimation, Couleur, partie);   //Donne le résultat du blanc, 1, 0 ou 0.5
                 }
                 catch (Exception ex)
                 {
@@ -487,7 +843,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
 
 
         // 1 <=> Reflexion gagne ; 0 <=> engine_comp gagne  et 0.5 nulle
-        public async Task<float> FairePartie(bool Couleur, int index_partie)
+        public async Task<float> FairePartie(Rating estimation, bool Couleur, int index_partie)
         {
             bool vainqueur = false;
             while (mot.PartieFinie == false)
@@ -533,6 +889,37 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 }
             }
             return coups_autorisees;
+        }
+
+        public Moteur.Coup[] ConversionStringCoups(string partie)
+        {
+            string[] coups_partie = partie.Trim().Split(' ');
+            int ajout = coups_partie.Length % 3 == 0 ? 0 : (coups_partie.Length - 1) % 3;
+            int nombre_coups = 2 * (coups_partie.Length / 3) + ajout;
+            Moteur.Coup[] coups = new Moteur.Coup[nombre_coups];
+            int rang_coup = 0;
+            for (int i = 0; i < coups_partie.Length; i++)
+            {
+                string coup_specifique = coups_partie[i];
+                if (i % 3 != 0 && coup_specifique.Length > 0)
+                {
+                    if (coup_specifique[0] == Char.ToUpper(coup_specifique[0]))
+                    {
+                        coup_specifique = coup_specifique.Substring(1);
+                    }
+                    int colonne_depart = coup_specifique[0] - 'a';
+                    int ligne_départ = coup_specifique[1] - '1';
+
+                    coup_specifique = coup_specifique[2] == 'x' ? coup_specifique.Substring(3) : coup_specifique.Substring(2);
+                    int colonne_arrivee = coup_specifique[0] - 'a';
+                    int ligne_arrivee = coup_specifique[1] - '1';
+
+                    coups[rang_coup] = Moteur.CreerCoup(ligne_départ * 8 + colonne_depart, ligne_arrivee * 8 + colonne_arrivee);
+                    rang_coup++;
+                }
+            }
+
+            return coups;
         }
     }
 }

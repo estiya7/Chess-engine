@@ -73,6 +73,15 @@ namespace Benchmark
             Score = 0;
             résultats = new float[nombre_parties];
         }
+        public Rating(Moteur moteur, int nombre_parties)
+        {
+            this.moteur = moteur;
+            engine_1 = new Reflexion(Moteur, true);
+            engine_2 = new Engine_comp(Moteur, false);
+            parties = new List<string>[nombre_parties];
+            Score = 0;
+            résultats = new float[nombre_parties];
+        }
 
         public Moteur GetMoteur()
         {
@@ -256,7 +265,7 @@ namespace Benchmark
         //r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - //Original (Position 2 Kiwipete)
         private static void Main(string[] args)
         {
-            PerftMoteur();
+            //PerftMoteur();
 
 
             //Pour mettre le nom d'un programme dans la base

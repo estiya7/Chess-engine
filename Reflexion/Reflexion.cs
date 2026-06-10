@@ -206,7 +206,7 @@ namespace IA_echecs
             int eval_opti = maximiser ? int.MinValue : int.MaxValue;
             int alpha = int.MinValue;
             int beta = int.MaxValue;
-            Coup coup_opti = MoteurTest.CreerCoup(0, 0);
+            Coup coup_opti = Moteur.CreerCoup(0, 0);
 
             Coup[] coups_initiaux = MoteurTest.Calcul_légaux();
             int nombre_max = MoteurTest.NombreLegaux;
@@ -392,7 +392,7 @@ namespace IA_echecs
 
             if (légaux.Length == 0)
             {
-                return Mot.CreerCoup(0, 0);
+                return Moteur.CreerCoup(0, 0);
             }
             /*
             if (total == 0)

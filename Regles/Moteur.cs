@@ -193,7 +193,7 @@ namespace Regles
             public int arrivee;
         }
 
-        public Coup CreerCoup(int d, int a)
+        public static Coup CreerCoup(int d, int a)
         {
             Coup coup;
             coup.départ = d;
@@ -337,7 +337,7 @@ namespace Regles
 
             notation += ColonneEnLettre(colonne_précédente);
             notation += ligne_précédente + 1;
-            if (piece_prise > 0)            //Rajoute les captures de piece
+            if (piece_prise != 50)            //Rajoute les captures de piece
             {
                 notation += "x";
             }
@@ -374,7 +374,7 @@ namespace Regles
         }
         */
 
-        public char ColonneEnLettre(int colonne)
+        public static char ColonneEnLettre(int colonne)
         {
             if (colonne == 0) { return 'a'; }
             if (colonne == 1) { return 'b'; }
@@ -2000,7 +2000,7 @@ namespace Regles
         {
             //Debug.WriteLine("On vérifie les coups dans le dos");
             ulong piece_echec = Checkers;
-            ulong cases_autorisees = 0ul;
+            ulong cases_interdites = 0ul;
             while (piece_echec != 0ul)
             {
                 int attaquant = BitOperations.TrailingZeroCount(Checkers);
@@ -2017,14 +2017,14 @@ namespace Regles
                         {
                             if (diff == 8 || diff == 1 || diff == -8 || diff == -1)
                             {
-                                cases_autorisees |= 1ul << (square - diff);
+                                cases_interdites |= 1ul << (square - diff);
                             }
                         }
                         if (numéro_attaquant == 102 || numéro_attaquant == 104)
                         {
                             if (diff == 7 || diff == 9 || diff == -7 || diff == -9)
                             {
-                                cases_autorisees |= 1ul << (square - diff);
+                                cases_interdites |= 1ul << (square - diff);
                             }
                         }
                     }
@@ -2039,21 +2039,21 @@ namespace Regles
                         {
                             if (diff == 8 || diff == 1 || diff == -8 || diff == -1)
                             {
-                                cases_autorisees |= 1ul << (square - diff);
+                                cases_interdites |= 1ul << (square - diff);
                             }
                         }
                         if (numéro_attaquant == 2 || numéro_attaquant == 4)
                         {
                             if (diff == 7 || diff == 9 || diff == -7 || diff == -9)
                             {
-                                cases_autorisees |= 1ul << (square - diff);
+                                cases_interdites |= 1ul << (square - diff);
                             }
                         }
                     }
                 }
                 piece_echec &= piece_echec - 1;
             }
-            return ~cases_autorisees;  //Cases interdites sont avec un 0, 1 est ok
+            return ~cases_interdites;  //Cases interdites sont avec un 0, 1 est ok
         }
 
         public void Reset_partie()    //Sert à garder le même objet en mémoire, donc pas de recharge au niveau des engine de réflexion, affichage etc

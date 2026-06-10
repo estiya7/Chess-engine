@@ -40,7 +40,7 @@ namespace IA_echecs
             Coup[] légaux = Mot.Calcul_légaux();   //Récupère tous les coups légaux avec case de départ associé
             if (légaux.Length == 0)
             {
-                return Mot.CreerCoup(0, 0);
+                return Moteur.CreerCoup(0, 0);
             }
 
             int random = Choix_random(Mot.NombreLegaux);    //On a xx 1 dans les 64 ulong, on choisi un nombre qui correspond à un 1
