@@ -1,15 +1,62 @@
-﻿using Regles;
+﻿using IA_echecs;
+using Regles;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
+using System.Linq;
 using System.Numerics;
-using System.Reflection.Metadata.Ecma335;
+using System.Text;
+using System.Threading.Tasks;
 using static Regles.Moteur;
 
 namespace IA_echecs
 {
-    public class Reflexion
+    public class Engine_random
     {
 
+        private Moteur mot;
+        private bool couleur;
+
+        public Moteur Mot
+        {
+            get { return mot; }
+            private set { mot = value; }
+        }
+
+        public bool Couleur
+        {
+            get { return couleur; }
+            private set { couleur = value; }
+        }
+
+        public Engine_random(Moteur moteur, bool couleur)
+        {
+            mot = moteur;
+            Couleur = couleur;
+        }
+
+        public Coup CoupRandom()
+        {
+            Coup[] légaux = Mot.Calcul_légaux();   //Récupère tous les coups légaux avec case de départ associé
+            if (légaux.Length == 0)
+            {
+                return Moteur.CreerCoup(0, 0);
+            }
+
+            int random = Choix_random(Mot.NombreLegaux);    //On a xx 1 dans les 64 ulong, on choisi un nombre qui correspond à un 1
+
+            return légaux[random];
+        }
+
+        public int Choix_random(int total)
+        {
+            Random random = new Random();
+            return random.Next(total);       //Index choisi au hasard parmi la liste
+        }
+    }
+
+    public class Engine_materialiste
+    {
         private Moteur mot;
         private Moteur mot_test;
         private bool couleur;
@@ -27,12 +74,12 @@ namespace IA_echecs
         }
         private Moteur MoteurTest
         {
-            get { return mot_test;}
+            get { return mot_test; }
             set { mot_test = value; }
         }
 
 
-        public Reflexion(Moteur moteur, bool couleur)
+        public Engine_materialiste(Moteur moteur, bool couleur)
         {
             mot = moteur;
             mot_test = new Moteur();
@@ -41,8 +88,6 @@ namespace IA_echecs
             pieces = moteur.pieces;
         }
 
-
-
         public Moteur CopieMoteur()
         {
             Moteur copie = new Moteur(mot);
@@ -50,117 +95,6 @@ namespace IA_echecs
         }
 
 
-        //Tableaux représentant la valeur d'une pièce selon sa case
-        /*
-        private int[] Valeur_case_roi = [-200, -200, -190, -190, -190, -190, -200, -200,    //1
-                                        -170, -170, -170, -170, -170, -170, -170, -170,
-                                        -140, -160, -160, -170, -170, -160, -160, -140,    //3
-                                        -110, -140, -160, -170, -170, -160, -140, -110,
-                                         -70, -110, -150, -160, -160, -150, -110,  -70,    //5
-                                         -40,  -80, -130, -140, -140, -130,  -80,  -40,
-                                           0,  -30,  -80, -120, -120,  -70,   40,   50,    //7
-                                         100,   90,   60,  -40,   30,  -50,   70,   60];
-
-        private int[] Valeur_case_reine =[-40, -30, -50, -50, -50, -50, -30, -40,    //1
-                                         -30, -40, -30, -20, -20, -30,  10, -20,
-                                          10,   0, -10, -20, -20, -10,   0,  10,    //3
-                                          20,  30,  20,  10,  10,  20,  30,  20,
-                                          40,  50,  40,  30,  30,  40,  50,  40,    //5
-                                          20,  40,  40,  30,  30,  40,  40,  40,
-                                         -20,  10,  50,  50,  50,  10, -20, -30,    //7
-                                         -40, -30,   0,  30,  10, -10, -40, -50];
-
-        private int[] Valeur_case_tour = [40,  50,  40,  30,  30,  40,  50,  40,    //1
-                                         70,  70,  70,  70,  80,  70,  70,  70,
-                                         50,  40,  30,  20,  20,  30,  40,  50,    //3
-                                         30,  20,  10,   0,   0,  10,  20,  30,
-                                         10,   0, -10, -20, -20,  10,  20,  30,    //5
-                                         20,  40,  40,  30,  30,  40,  40,  40,
-                                        -20,  10,  50,  50,  50,  10, -20, -30,    //7
-                                          0,  20,  45,  50,  50,  40,  20,   0];
-
-        private int[] Valeur_case_fou = [-60, -30, -50, -50, -50, -50, -50, -60,    //1
-                                        -50, -40, -40, -30, -30, -40, -40, -50,
-                                        -20,  10,  10,   0,   0,  10,  10,   0,    //3
-                                        -10,  20,  30,   0,   0,  30,  20,   0,
-                                          40,  50,  40,  30,  30,  40,  50,  40,    //5
-                                          20,  40,  40,  30,  30,  40,  40,  40,
-                                         -20,  10,  20,   0,   0,  10,  50, -20,    //7
-                                         -40, -30, -40, -30, -30, -40, -40, -10];
-
-        private int[] Valeur_case_cavalier = [-40, -20, -10,  0,   0, -10, -20, -40,    //1
-                                             -20, -10,   0,  10,  10,   0, -10, -20,
-                                             -10,   0,  20,  30,  30,  20,   0, -10,    //3
-                                               0,  20,  30,  50,  50,  30,  20,   0,
-                                               0,  20,  30,  50,  50,  30,  20,   0,    //5
-                                             -10,   0,  20,  30,  30,  20,   0, -10,
-                                             -20, -10,   0,  10,  10,   0, -10, -20,    //7
-                                             -40, -20, -10,   0,   0, -10, -20, -40];
-
-        private int[] Valeur_case_pion = [  0,   0,   0,   0,   0,   0,   0,   0,    //1
-                                          60,  60,  60,  60,  60,  60,  60,  60,
-                                          50,  40,  40,  40,  40,  40,  40,  50,    //3
-                                          30,  10,  20,  30,  30,  20,  10,  20,
-                                          10,   0,  40,  40,  40,  40, -30,  10,    //5
-                                          40,  20,  50,  30,  30,  50,  20,  30,
-                                          40,   0,  20,   0,   0,  20,   0,  40,    //7
-                                           0,   0,   0,   0,   0,   0,   0,   0,];
-        */
-
-        public List<int> Cases_attaque_carré(int carré)
-        {
-            List<int> liste_attaque = new List<int>();
-            int ligne_carré = carré / 8;
-            int colonne_carré = carré % 8;
-            int diff_carré = ligne_carré - colonne_carré;
-            int square = -1;
-            int ligne = 0;
-            int colonne = 0;
-            for (ligne = 0; ligne < 8;  ligne++)
-            { 
-                for (colonne = 0; colonne < 8; colonne++)
-                {
-                    square++;
-                    int diff = ligne - colonne;
-                    int colonne_inverse = Math.Abs(colonne - 7);
-                    int diff_inverse = ligne - colonne_inverse;
-                    if (diff == diff_carré)
-                    {
-                        liste_attaque.Add(square);
-                    }
-                    if (ligne == ligne_carré || colonne == colonne_carré)
-                    {
-                        liste_attaque.Add(square);
-                    }
-                    if (ligne - colonne_inverse == diff)
-                    {
-                        liste_attaque.Add(square);
-                    }
-                }
-            }
-            int[] cavalier = [carré - 17, carré - 15, carré - 10, carré - 6, carré + 6, carré + 10, carré + 15, carré + 17];
-            foreach (int coup in cavalier)
-            {
-                ligne = coup / 8;
-                colonne = coup % 8;
-                if (coup < 0 || coup > 63)
-                {
-                    if (Math.Abs(colonne - colonne_carré) > 2 == false)
-                    {
-                        liste_attaque.Add(coup);
-                    }
-                }
-            }
-            return liste_attaque;
-        }
-
-
-        public void Get_Moteur_IA(Moteur moteur)
-        {
-            mot = moteur;
-        }
-
-        //Retourne la valeur supplémentaire de la pièce selon sa case
         public int Valeur_piece(int piece)
         {
             if (piece == 6 || piece == 106)
@@ -185,14 +119,10 @@ namespace IA_echecs
             }
             return 0;
         }
-
-
-
-        public Coup MeilleurCoup()
+        public Coup MeilleurCoup(int profondeur_max = 1)
         {
             mot_test = CopieMoteur();
 
-            int profondeur_max = 1;
             Coup coup = SetupSearch(profondeur_max, mot.Blanc);
 
             return coup;
@@ -215,7 +145,7 @@ namespace IA_echecs
                 bool rlb = MoteurTest.Roque_long_blanc;
                 bool rn = MoteurTest.Roque_noir;
                 bool rln = MoteurTest.Roque_long_noir;
-                string dernier_coup = MoteurTest.DernierCoup; 
+                string dernier_coup = MoteurTest.DernierCoup;
                 int compt50coups = MoteurTest.Compteur_50coups;
                 int piece_prise = MoteurTest.pieces[coup.arrivee];
 
@@ -334,7 +264,7 @@ namespace IA_echecs
 
         public int Evaluation()
         {
-            if (MoteurTest.PartieFinie)    
+            if (MoteurTest.PartieFinie)
             {
                 if (MoteurTest.InCheck)
                 {
@@ -367,7 +297,6 @@ namespace IA_echecs
             return materiel;
         }
 
-
         public int Choix_random(int max)
         {
             Random random = new Random();
@@ -379,15 +308,5 @@ namespace IA_echecs
         {
             return 0;
         }
-
-        /*
-        public static void AffichageCaractéristiquesMoteur(Moteur moteur)
-        {
-            Debug.WriteLine("Caractéristiques du moteur : ");
-            Debug.WriteLine($"Les pièces : {moteur.Pieces_long:B64}");
-            Debug.WriteLine($"Etats des booléens : inCheck = {moteur.InCheck}, les roques : {moteur.Roque_blanc} {moteur.Roque_long_blanc} {moteur.Roque_noir} {moteur.Roque_long_noir}");
-            Debug.WriteLine($"tour blanc : {moteur.Blanc}, Cases roi : {moteur.CaseRoiBlanc} {moteur.CaseRoiNoir}");
-        }
-        */
     }
 }

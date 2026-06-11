@@ -14,8 +14,8 @@ namespace Benchmark
     public class Rating
     {
         private Moteur moteur;
-        private Reflexion engine_1;
-        private Engine_comp engine_2;
+        private Engine_materialiste engine_1;
+        private Engine_random engine_2;
         private float score;
         private float[] résultats;
         private List<string>[] parties;
@@ -26,12 +26,12 @@ namespace Benchmark
             get { return moteur; }
             private set { moteur = value; }
         }
-        public Reflexion Engine_1
+        public Engine_materialiste Engine_1
         {
             get { return engine_1; }
             private set { engine_1 = value; }
         }
-        public Engine_comp Engine_2
+        public Engine_random Engine_2
         {
             get { return engine_2; }
             private set { engine_2 = value; }
@@ -57,8 +57,8 @@ namespace Benchmark
         public Rating()
         {
             moteur = new Moteur();
-            engine_1 = new Reflexion(Moteur, true);
-            engine_2 = new Engine_comp(Moteur, false);
+            engine_1 = new Engine_materialiste(Moteur, true);
+            engine_2 = new Engine_random(Moteur, false);
             parties = new List<string>[10];
             score = 0;
             résultats = new float[10];
@@ -67,8 +67,8 @@ namespace Benchmark
         public Rating(int nombre_parties)
         {
             moteur = new Moteur();
-            engine_1 = new Reflexion(Moteur, true);
-            engine_2 = new Engine_comp(Moteur, false);
+            engine_1 = new Engine_materialiste(Moteur, true);
+            engine_2 = new Engine_random(Moteur, false);
             parties = new List<string>[nombre_parties];
             Score = 0;
             résultats = new float[nombre_parties];
@@ -76,8 +76,8 @@ namespace Benchmark
         public Rating(Moteur moteur, int nombre_parties)
         {
             this.moteur = moteur;
-            engine_1 = new Reflexion(Moteur, true);
-            engine_2 = new Engine_comp(Moteur, false);
+            engine_1 = new Engine_materialiste(Moteur, true);
+            engine_2 = new Engine_random(Moteur, false);
             parties = new List<string>[nombre_parties];
             Score = 0;
             résultats = new float[nombre_parties];
@@ -206,7 +206,7 @@ namespace Benchmark
             {
                 if (Couleur)     //Au premier tour, couleur indique les blancs
                 {
-                    Moteur.Coup coup_1 = Engine_1.CoupRandom();
+                    Moteur.Coup coup_1 = Engine_1.MeilleurCoup();
                     vainqueur = Moteur.Realisation_coup_logique(coup_1.départ, coup_1.arrivee);
                 }
                 else
@@ -275,34 +275,6 @@ namespace Benchmark
             string nom_2 = "Matérialiste";
             Sauvegarde_database.Sauvegarde_programme(nom_1, elo);
             Sauvegarde_database.Sauvegarde_programme(nom_2, elo);
-            */
-            //TEST POUR LA DATABASE QUI MARCHE
-            /*
-            List<string>[] parties = new List<string>[3];
-            parties[0] = new List<string>();
-            parties[1] = new List<string>();
-            parties[2] = new List<string>();
-
-            float[] resultats = new float[3];
-            float score = 2f;
-            int moteur_1 = 1;
-            int moteur_2 = 1;
-            parties[0].Add("p0_coup1");
-            parties[0].Add("p0_coup2");
-            parties[0].Add("p0_coup3");
-            parties[0].Add("p0_coup4");
-            parties[1].Add("p1_coup1");
-            parties[1].Add("p1_coup2");
-            parties[1].Add("p1_coup3");
-            parties[1].Add("p1_coup4");
-            parties[1].Add("p1_coup5");
-            parties[2].Add("p2_coup1");
-            parties[2].Add("p2_coup2");
-            parties[2].Add("p2_coup3");
-            resultats[0] = 1;
-            resultats[1] = 0.5f;
-            resultats[2] = 0.5f;
-            Sauvegarde_database.Sauvegarde_affrontement(parties, resultats, score, moteur_1, moteur_2);
             */
         }
     }

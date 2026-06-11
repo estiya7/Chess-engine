@@ -255,7 +255,47 @@ namespace Benchmark
             return resultat;
         }
 
+        public static string[] ProgrammesJouables()
+        {
+            MySqlConnection conn = ConnexionSql();
 
+            int nb_modeles = 0;
+
+            string commande_nb = "SELECT COUNT(*) FROM IA_versions;";
+
+            using (MySqlCommand cmd = new MySqlCommand(commande_nb, conn))
+            {
+                try
+                {
+                    nb_modeles = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+                catch
+                {
+                    nb_modeles = 0;
+                }
+            }
+
+            string[] modeles = new string[nb_modeles];
+
+            string commande = "SELECT * FROM IA_versions;";
+
+            using (MySqlCommand cmd = new MySqlCommand(commande, conn))
+            {
+                MySqlDataReader reader = cmd.ExecuteReader();
+                int rang = 0;
+                while (reader.Read())
+                {
+                    modeles[rang] = Convert.ToString(reader[0]) + "  Elo : " + Convert.ToString(reader[1]);
+                }
+                reader.Close();
+            }
+
+            conn.Close();
+            conn.Dispose();
+
+            return modeles;
+
+        }
 
         public static MySqlConnection ConnexionSql()
         {

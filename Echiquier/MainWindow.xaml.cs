@@ -32,14 +32,14 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
     public partial class MainWindow : Window
     {
         public Moteur mot;
-        public Reflexion IA;
+        public Engine_materialiste IA;
         public bool EvaluationEnCours = false;
         public int usage;
 
         public MainWindow()
         {
             mot = new Moteur();
-            IA = new Reflexion(mot, true);
+            IA = new Engine_materialiste(mot, true);
             InitializeComponent();
             CreateChessboard();
             SetPieces();
@@ -255,16 +255,8 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
 
         public bool Realisation_coup_robot(int carré_précédent, int carré)
         {
-            bool vainqueur = false;
+            bool vainqueur = true;
             (int départ, int arrivée) coup = (carré_précédent, carré);
-            if (coup.départ == coup.arrivée)
-            {
-                if (coup.départ == 100)
-                {
-                    Procédure_nulle("échec et mat!!", true);
-                }
-                Procédure_nulle("Pat", true);
-            }
             if (coup.arrivée > -1)
             {
                 vainqueur = Realisation_coup(coup.départ, coup.arrivée);
@@ -273,6 +265,19 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 bouton_départ.Background = new SolidColorBrush(Color.FromRgb(210, 150, 80));
                 bouton_arrivée.Background = new SolidColorBrush(Color.FromRgb(210, 150, 80));
             }
+            else
+            {
+                mot.PartieFinie = true;
+                if (mot.InCheck == true)
+                {
+                    vainqueur = true;
+                }
+                else
+                {
+                    vainqueur = false;
+                }
+            }
+            
             return vainqueur;
             //else      //Test sans cette boucle
             //{
@@ -417,6 +422,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             {
                 return partie_choisie;
             }
+
             Window choix_partie = new Window();
             choix_partie.Width = 400;
             choix_partie.Height = 150;
@@ -808,6 +814,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
 
             return nombre_partie;
         }
+
         public async Task<bool> Evaluation()
         {
             int nombre_parties_a_jouer = NombrePartiesPourEvaluation();
@@ -836,11 +843,12 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 Debug.WriteLine($"Partie n°{partie} terminée, résultat = {résultat}");
                 Couleur = !Couleur;   //On alterne les couleurs à chaque partie
             }
-            Sauvegarde_database.Sauvegarde_affrontement(estimation.Parties, estimation.Resultats, estimation.Score, 2, 1);
+            Sauvegarde_database.Sauvegarde_affrontement(estimation.Parties, estimation.Resultats, estimation.Score, 2, 2);
             EvaluationEnCours = false;
             return true;
         }
 
+        //La partie est finie
 
         // 1 <=> Reflexion gagne ; 0 <=> engine_comp gagne  et 0.5 nulle
         public async Task<float> FairePartie(Rating estimation, bool Couleur, int index_partie)
@@ -850,7 +858,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             {
                 if (Couleur)     //Au premier tour, couleur indique les blancs
                 {
-                    Moteur.Coup coup_1 = estimation.Engine_1.MeilleurCoup();   
+                    Moteur.Coup coup_1 = estimation.Engine_1.MeilleurCoup(1);   
                     vainqueur = Realisation_coup_robot(coup_1.départ, coup_1.arrivee);
                 }
                 else
@@ -859,11 +867,10 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                     vainqueur = Realisation_coup_robot(coup_2.départ, coup_2.arrivee);
                 }
                 Couleur = !Couleur;
-                await Task.Delay(10);
+                await Task.Delay(50);
             }
             estimation.Parties[index_partie] = new List<string>();
             estimation.Parties[index_partie] = mot.Partie;
-            mot.Reset_partie();
             ResetPartie();
             if (vainqueur)   //On sait que un des deux a gagné
             {
@@ -875,6 +882,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
         public void ResetPartie()
         {
             SetPieces();
+            mot.Reset_partie();
         }
 
 
