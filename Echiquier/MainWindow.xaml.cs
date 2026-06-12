@@ -172,7 +172,6 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 int ligne = Math.Abs(Grid.GetRow(carré_piece) - 7);
                 int colonne = Grid.GetColumn(carré_piece);
                 int carré = ligne * 8 + colonne;
-                Debug.WriteLine($"On reset le carré {carré}");
                 int piece_logique = mot.Donneur_numéro(carré);  //Récupère le numéro de la piece
                 piece.piece_logique = piece_logique;
                 piece = Completion_piece(piece);  //Complète toutes les infos sur la piece
@@ -536,8 +535,10 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             }
             EchangePieces(carré_précédent, carré);   //Fait juste l'affichage
 
-            if (mot.Roque_effectué(carré_précédent, carré) == true)   //Vérifie si le dernier coup est le roque
+            Debug.WriteLine($"\n\nOn va appeler la fonction roque effectué depuis MainWindow avec carré = {carré} et précédent = {carré_précédent}");
+            if (mot.Roque_effectué(carré, carré_précédent) == true)   //Roque pas encore effectué logiquement, on inverse les cases
             {
+                Debug.WriteLine("On fait le roque visuellement");
                 Faire_roque(carré_précédent, carré);
             }
 
@@ -646,6 +647,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 }
                 if (carré == 6)
                 {
+                    Debug.WriteLine("On fait le roque_blanc");
                     EchangePieces(7, 5);
                 }
             }
@@ -861,16 +863,14 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 {
                     Moteur.Coup coup_1 = estimation.Engine_1.MeilleurCoup(3);   
                     vainqueur = Realisation_coup_robot(coup_1.départ, coup_1.arrivee);
-                    Debug.WriteLine($"Coup joué : {coup_1.départ} --> {coup_1.arrivee}");
                 }
                 else
                 {
                     Moteur.Coup coup_2 = estimation.Engine_2.CoupRandom();
                     vainqueur = Realisation_coup_robot(coup_2.départ, coup_2.arrivee);
-                    Debug.WriteLine($"Coup joué : {coup_2.départ} --> {coup_2.arrivee}");
                 }
                 Couleur = !Couleur;
-                await Task.Delay(1000);
+                await Task.Delay(10);
             }
             estimation.Parties[index_partie] = new List<string>();
             estimation.Parties[index_partie] = mot.Partie;
@@ -884,7 +884,6 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
 
         public void ResetPartie()
         {
-            Debug.WriteLine("On reset la partie");
             mot.Reset_partie();
             SetPieces();
         }

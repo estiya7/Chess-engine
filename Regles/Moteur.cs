@@ -1192,7 +1192,8 @@ namespace Regles
             }
 
             EchangePieces_logique(carré_précédent, carré, piece_prise);
-            
+
+            Debug.WriteLine($"\n\nOn appelle roque_effectué depuis le moteur avec carré = {carré} et précédent = {carré_précédent} ");
             if (Roque_effectué(carré_précédent, carré) == true)   //Vérifie si le dernier coup est le roque
             {
                 //Debug.WriteLine("Roque effectué");
@@ -1228,7 +1229,7 @@ namespace Regles
 
             if (Vérification_pat())   //Aucun coup légal
             {
-                //Debug.WriteLine($"Partie terminée !! Dernier coup : {carré_précédent} --> {carré}");
+                //if (vrai_coup) Debug.WriteLine($"Partie terminée !! Dernier coup : {carré_précédent} --> {carré}");
                 PartieFinie = true;
                 if (InCheck)
                 {
@@ -1338,22 +1339,22 @@ namespace Regles
 
             int piece_active = pieces[carré_précédent];
             int numero_couleur = Blanc ? 0 : 100;
-            if (piece_active == 6 && (carré - carré_précédent) % 8 != 0 && piece_prise == 50)
+            if (piece_active == 6 && (carré - carré_précédent) % 8 != 0 && piece_prise == 50 && carré_précédent > 7)
             {
                 //Debug.WriteLine("On annule un en passant des blancs");
                 int pion_pris = 106;
                 pieces[carré_précédent - 8] = pion_pris;
                 Bitboards_noir[0] |= 1ul << (carré_précédent - 8);
-                Bitboards_noir[6] &= Bitboards_noir[0];
+                Bitboards_noir[6] |= 1ul << (carré_précédent - 8);
                 EnPassantBool = true;
             }
-            else if (piece_active == 106 && (carré - carré_précédent) % 8 != 0 && piece_prise == 50)
+            else if (piece_active == 106 && (carré - carré_précédent) % 8 != 0 && piece_prise == 50 && carré_précédent < 56)
             {
                 //Debug.WriteLine("On annule un en passant des noirs");
                 int pion_pris = 6;
                 pieces[carré_précédent + 8] = pion_pris;
                 Bitboards_blanc[0] |= 1ul << (carré_précédent + 8);
-                Bitboards_blanc[6] &= Bitboards_blanc[0];
+                Bitboards_blanc[6] |= 1ul << (carré_précédent + 8);
                 EnPassantBool = true;
             }
             else if (Roque_effectué(carré, carré_précédent))
@@ -1645,6 +1646,7 @@ namespace Regles
 
         public ulong Roque(int case_roi, ulong Légaux_ennemis)  //Vérifie si le roque est possible
         {
+            //Debug.WriteLine($"On check si les roques sont possibles pour blanc = {Blanc}, case_roi = {case_roi} et Légaux_ennemis = {Légaux_ennemis:B64}");
             ulong roque_légaux = 0UL;
 
             if (Blanc)
@@ -1653,6 +1655,7 @@ namespace Regles
                 {
                     if (((3UL << 5) & pieces_long) == 0 && ((7UL << 4) & Légaux_ennemis) == 0UL)  //Si les cases entre 4 et 6 inclus sont soumis à un coup légal noir quelconque
                     {
+                        //Debug.WriteLine("roque court blanc validé");
                         roque_légaux |= 1UL << 6;
                     }
                 }
@@ -1660,6 +1663,7 @@ namespace Regles
                 {
                     if (((7UL << 1) & pieces_long) == 0 && ((7UL << 2) & Légaux_ennemis) == 0UL)   //Si les cases entre 4 et 6 inclus sont soumis à un coup légal noir quelconque
                     {
+                        //Debug.WriteLine("roque long blanc validé");
                         roque_légaux |= 1UL << 2;
                     }
                 }
@@ -1668,15 +1672,17 @@ namespace Regles
             {
                 if (roque_noir)
                 {
-                    if (((7UL << 57) & pieces_long) == 0 && ((7UL << 60) & Légaux_ennemis) == 0UL)   //Si les cases entre 4 et 6 inclus sont soumis à un coup légal noir quelconque
+                    if (((3UL << 61) & pieces_long) == 0 && ((7UL << 60) & Légaux_ennemis) == 0UL)   //Si les cases entre 4 et 6 inclus sont soumis à un coup légal noir quelconque
                     {
+                        //Debug.WriteLine("roque court noir validé");
                         roque_légaux |= 1UL << 62;
                     }
                 }
                 if (roque_long_noir)
                 {
-                    if (((3UL << 61) & pieces_long) == 0 && ((7UL << 58) & Légaux_ennemis) == 0UL)   //Si les cases entre 4 et 6 inclus sont soumis à un coup légal noir quelconque
+                    if (((7UL << 57) & pieces_long) == 0 && ((7UL << 58) & Légaux_ennemis) == 0UL)   //Si les cases entre 4 et 6 inclus sont soumis à un coup légal noir quelconque
                     {
+                        //Debug.WriteLine("roque long noir validé");
                         roque_légaux |= 1UL << 58;
                     }
                 }
@@ -1688,8 +1694,10 @@ namespace Regles
 
         public bool Roque_effectué(int carré_précédent, int carré)  //Vérifie si l'action est Roque
         {
+            Debug.WriteLine($"On regarde si l'action effectuée est roque (on regarde la case {carré} où le roi se situe");
             if (Math.Abs(carré_précédent - carré) == 2 && pieces[carré] % 10 == 1)
             {
+                Debug.WriteLine("Le roque a bien été effectué");
                 return true;
             }
             return false;
@@ -1784,12 +1792,12 @@ namespace Regles
             //Debug.WriteLine("On vérifie si y'a pat");
             if (compteur_50coups >= 100)
             {
-                //Debug.WriteLine("On return true");
+                //Debug.WriteLine("On return true, règle des 50 coups");
                 return true;
             }
             if (BitOperations.PopCount(pieces_long) <= 2)
             {
-                //Debug.WriteLine("On return true");
+                //Debug.WriteLine("On return true, il ne reste que les rois");
                 return true;
             }
             //Debug.WriteLine("Assez de pièces et pas de 50 coups");
@@ -1814,7 +1822,7 @@ namespace Regles
                 full_pieces &= full_pieces - 1;
                 square = BitOperations.TrailingZeroCount(full_pieces);
             }
-            //Debug.WriteLine($"Donc on sort du while, on a coups = {coups}");
+            //Debug.WriteLine($"Donc on sort du while, y'a t-il des coups possibles : {coups}");
             if (coups == true)
             {
                 return false;
@@ -1836,30 +1844,36 @@ namespace Regles
                 square = BitOperations.TrailingZeroCount(full_pieces);
                 //Debug.WriteLine($"On calcule les légaux de l'ennemi en {square} et cela donne légaux = {attaque:B64}");
             }
-            if (Blanc)
+            if (Blanc == false)
             {
                 ulong coups_légaux_roi_blanc = légaux_roi(CaseRoiBlanc, CaseRoiBlanc % 8) & ~p_amis & ~attaque;
                 if (coups_légaux_roi_blanc == 0ul)  //Le roi n'a pas de coups
                 {
+                    //Debug.WriteLine("Le roi noir a des coups");
                     return true;
                 }
                 coups_légaux_roi_blanc &= PatCoupIllégalDosPiece(CaseRoiBlanc);
                 if (coups_légaux_roi_blanc == 0ul)
                 {
+                    //Debug.WriteLine("Le roi noir a des coups");
                     return true;
                 }
+                //Debug.WriteLine("Le roi noir a des coups");
                 return false;
             }
             ulong coups_légaux_roi_noir = légaux_roi(CaseRoiNoir, CaseRoiNoir % 8) & ~p_amis & ~attaque;
             if (coups_légaux_roi_noir == 0ul)
             {
+                //Debug.WriteLine("Le roi blanc n'a pas de coups");
                 return true;
             }
             coups_légaux_roi_noir &= PatCoupIllégalDosPiece(CaseRoiBlanc);
             if (coups_légaux_roi_noir == 0ul)
             {
+                //Debug.WriteLine("Le roi blanc n'a pas des coups");
                 return true;
             }
+            //Debug.WriteLine("Le roi blanc a des coups");
             return false;
 
         }
