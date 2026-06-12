@@ -211,6 +211,7 @@ namespace IA_echecs
             for (int rang = 0; rang < nombre_max; rang++)
             {
                 Coup coup = coups_initiaux[rang];
+                bool finie = MoteurTest.PartieFinie;
                 bool rb = MoteurTest.Roque_blanc;
                 bool rlb = MoteurTest.Roque_long_blanc;
                 bool rn = MoteurTest.Roque_noir;
@@ -227,7 +228,7 @@ namespace IA_echecs
                 }
 
                 int eval = Search(profondeur_max, alpha, beta, !maximiser);
-                MoteurTest.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, promotion, rb, rlb, rn, rln, compt50coups);
+                MoteurTest.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, finie, promotion, rb, rlb, rn, rln, compt50coups);
 
                 if (maximiser)
                 {
@@ -278,6 +279,7 @@ namespace IA_echecs
             for (int rang = 0; rang < nombre_max; rang++)
             {
                 Coup coup_joué = coups_disponibles[rang];
+                bool finie = MoteurTest.PartieFinie;
                 bool rb = MoteurTest.Roque_blanc;
                 bool rlb = MoteurTest.Roque_long_blanc;
                 bool rn = MoteurTest.Roque_noir;
@@ -306,7 +308,7 @@ namespace IA_echecs
                     eval_coup_joué = Search(profondeur - 1, alpha, beta, !maximiser);   //Eval max des tours précédents
                 }
 
-                MoteurTest.Annulation_Realisation_coup(coup_joué.arrivee, coup_joué.départ, piece_prise, promotion, rb, rlb, rn, rln, compt50coups);
+                MoteurTest.Annulation_Realisation_coup(coup_joué.arrivee, coup_joué.départ, piece_prise, finie, promotion, rb, rlb, rn, rln, compt50coups);
 
                 if (maximiser == false)    //Si on est à une profondeur noire, on cherche tous les coups pour le meilleur
                 {

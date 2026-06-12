@@ -1327,7 +1327,7 @@ namespace Regles
         //1001000101111101011100110001100000010010101001001111111110010001  //Référence
 
         //PB PROMOTION VERIFIER SI LES PIECES REAPPARAISSENT BIEN
-        public void Annulation_Realisation_coup(int carré_précédent, int carré, int piece_prise, bool prom, bool rb, bool rlb, bool rn, bool rln, int compt50coups)
+        public void Annulation_Realisation_coup(int carré_précédent, int carré, int piece_prise, bool finie, bool prom, bool rb, bool rlb, bool rn, bool rln, int compt50coups)
         {
             Blanc = !Blanc;  //Blanc -> coup blanc / annulation blanc, sinon on a des problèmes sur les conditions (Blanc ?)
             if (Partie.Count > 1)
@@ -1380,6 +1380,7 @@ namespace Regles
             Roque_noir = rn;
             Roque_long_noir = rln;
             Compteur_50coups = compt50coups;
+            PartieFinie = finie;
 
             MAJ_Légaux(carré_précédent, carré);  //On met à jour les coups légaux
 

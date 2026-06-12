@@ -27,14 +27,15 @@ CREATE TABLE Partie (ID_Partie INTEGER AUTO_INCREMENT,
 					id_affrontement INTEGER,
                     Ordre_partie INTEGER,
                     Resultat FLOAT,
-                    Coups VARCHAR(5000),
+                    Coups VARCHAR(16000),
                     FOREIGN KEY (id_affrontement) REFERENCES Affrontement (ID_Affrontement),
                     PRIMARY KEY (ID_Partie));
 */
--- DELETE FROM Partie WHERE id_affrontement = 1;
--- DELETE FROM Affrontement WHERE ID_Affrontement = 1;
+-- DELETE FROM Partie WHERE id_affrontement = 2;
+-- DELETE FROM Affrontement WHERE ID_Affrontement = 2;
 SELECT * FROM IA_versions;
 SELECT * FROM Affrontement;
-SELECT * FROM Partie;
+SELECT * FROM Partie WHERE id_affrontement = 2;
+-- UPDATE Affrontement SET Programme_1 = 1 WHERE ID_Affrontement = 1;
 
 SELECT MAX(ID_Affrontement) FROM Affrontement;

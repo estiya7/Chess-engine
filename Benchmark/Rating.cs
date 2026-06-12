@@ -137,6 +137,7 @@ namespace Benchmark
             for (int rang = 0; rang < nombre_coups; rang++)
             {
                 Moteur.Coup coup = légaux_position[rang];
+                bool finie = moteur.PartieFinie;
                 bool rb = moteur.Roque_blanc; bool rlb = moteur.Roque_long_blanc; bool rn = moteur.Roque_noir; bool rln = moteur.Roque_long_noir;
                 string dernier_coup = moteur.DernierCoup; int compt50coups = moteur.Compteur_50coups;
                 int piece_prise = moteur.pieces[coup.arrivee];
@@ -148,17 +149,17 @@ namespace Benchmark
                 {
                     compt += TestNbLegaux(moteur, profondeur - 1);
                     if (profondeur == profondeur_max) { NbCoupsParCoup[compteur]--; LegendeCoup[compteur] = (coup.départ, coup.arrivee); compteur++; }
-                    moteur.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, true, rb, rlb, rn, rln, compt50coups);
+                    moteur.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, finie, true, rb, rlb, rn, rln, compt50coups);
 
                     moteur.Realisation_coup_logique(coup.départ, coup.arrivee, 1);
                     compt += TestNbLegaux(moteur, profondeur - 1);
                     if (profondeur == profondeur_max) { NbCoupsParCoup[compteur]--; LegendeCoup[compteur] = (coup.départ, coup.arrivee); compteur++; }
-                    moteur.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, true, rb, rlb, rn, rln, compt50coups);
+                    moteur.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, finie, true, rb, rlb, rn, rln, compt50coups);
 
                     moteur.Realisation_coup_logique(coup.départ, coup.arrivee, 2);
                     compt += TestNbLegaux(moteur, profondeur - 1);
                     if (profondeur == profondeur_max) { NbCoupsParCoup[compteur]--; LegendeCoup[compteur] = (coup.départ, coup.arrivee); compteur++; }
-                    moteur.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, true, rb, rlb, rn, rln, compt50coups);
+                    moteur.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, finie, true, rb, rlb, rn, rln, compt50coups);
 
                     moteur.Realisation_coup_logique(coup.départ, coup.arrivee, 3);
                 }
@@ -166,7 +167,7 @@ namespace Benchmark
                 compt += TestNbLegaux(moteur, profondeur - 1);
                 NbCoupsParCoup[compteur]++;
                 //Debug.WriteLine($"On annule le coup en faisant {coup} --> {i}");
-                moteur.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, promotion, rb, rlb, rn, rln, compt50coups);
+                moteur.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, finie, promotion, rb, rlb, rn, rln, compt50coups);
 
                 if (profondeur != 1 && profondeur < profondeur_max) { NbCoupsParCoup[compteur]--; }
                 if (profondeur == profondeur_max) { NbCoupsParCoup[compteur]--; LegendeCoup[compteur] = (coup.départ, coup.arrivee); compteur++; }

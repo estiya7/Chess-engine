@@ -172,6 +172,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 int ligne = Math.Abs(Grid.GetRow(carré_piece) - 7);
                 int colonne = Grid.GetColumn(carré_piece);
                 int carré = ligne * 8 + colonne;
+                Debug.WriteLine($"On reset le carré {carré}");
                 int piece_logique = mot.Donneur_numéro(carré);  //Récupère le numéro de la piece
                 piece.piece_logique = piece_logique;
                 piece = Completion_piece(piece);  //Complète toutes les infos sur la piece
@@ -858,16 +859,18 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             {
                 if (Couleur)     //Au premier tour, couleur indique les blancs
                 {
-                    Moteur.Coup coup_1 = estimation.Engine_1.MeilleurCoup(1);   
+                    Moteur.Coup coup_1 = estimation.Engine_1.MeilleurCoup(3);   
                     vainqueur = Realisation_coup_robot(coup_1.départ, coup_1.arrivee);
+                    Debug.WriteLine($"Coup joué : {coup_1.départ} --> {coup_1.arrivee}");
                 }
                 else
                 {
                     Moteur.Coup coup_2 = estimation.Engine_2.CoupRandom();
                     vainqueur = Realisation_coup_robot(coup_2.départ, coup_2.arrivee);
+                    Debug.WriteLine($"Coup joué : {coup_2.départ} --> {coup_2.arrivee}");
                 }
                 Couleur = !Couleur;
-                await Task.Delay(50);
+                await Task.Delay(1000);
             }
             estimation.Parties[index_partie] = new List<string>();
             estimation.Parties[index_partie] = mot.Partie;
@@ -881,8 +884,9 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
 
         public void ResetPartie()
         {
-            SetPieces();
+            Debug.WriteLine("On reset la partie");
             mot.Reset_partie();
+            SetPieces();
         }
 
 

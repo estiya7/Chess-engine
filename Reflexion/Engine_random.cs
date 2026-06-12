@@ -123,6 +123,7 @@ namespace IA_echecs
         {
             mot_test = CopieMoteur();
 
+            Debug.WriteLine("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDEBUT DE LA RECHERCHE\n\n\n\n\n\n\n");
             Coup coup = SetupSearch(profondeur_max, mot.Blanc);
 
             return coup;
@@ -141,6 +142,7 @@ namespace IA_echecs
             for (int rang = 0; rang < nombre_max; rang++)
             {
                 Coup coup = coups_initiaux[rang];
+                bool finie = MoteurTest.PartieFinie;
                 bool rb = MoteurTest.Roque_blanc;
                 bool rlb = MoteurTest.Roque_long_blanc;
                 bool rn = MoteurTest.Roque_noir;
@@ -155,9 +157,10 @@ namespace IA_echecs
                 {
                     return coup;
                 }
-
+                Debug.WriteLine($"\n\n\nOn fait le coup en profondeur max {coup.départ} --> {coup.arrivee}\n");
                 int eval = Search(profondeur_max, alpha, beta, !maximiser);
-                MoteurTest.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, promotion, rb, rlb, rn, rln, compt50coups);
+                Debug.WriteLine($"Le coup a une évaluation d'au minimum : {eval}");
+                MoteurTest.Annulation_Realisation_coup(coup.arrivee, coup.départ, piece_prise, promotion, finie, rb, rlb, rn, rln, compt50coups);
 
                 if (maximiser)
                 {
@@ -166,14 +169,6 @@ namespace IA_echecs
                         alpha = eval;
                         coup_opti = coup;
                     }
-                    else if (eval == alpha)
-                    {
-                        int random = Choix_random(10);
-                        if (random == 0)
-                        {
-                            coup_opti = coup;
-                        }
-                    }
                 }
                 else
                 {
@@ -181,14 +176,6 @@ namespace IA_echecs
                     {
                         beta = eval;
                         coup_opti = coup;
-                    }
-                    else if (eval == beta)
-                    {
-                        int random = Choix_random(10);
-                        if (random == 0)
-                        {
-                            coup_opti = coup;
-                        }
                     }
                 }
             }
@@ -208,6 +195,7 @@ namespace IA_echecs
             for (int rang = 0; rang < nombre_max; rang++)
             {
                 Coup coup_joué = coups_disponibles[rang];
+                bool finie = MoteurTest.PartieFinie;
                 bool rb = MoteurTest.Roque_blanc;
                 bool rlb = MoteurTest.Roque_long_blanc;
                 bool rn = MoteurTest.Roque_noir;
@@ -222,7 +210,7 @@ namespace IA_echecs
 
                 if (MoteurTest.PartieFinie)
                 {
-                    if (checkmate)
+                    if (MoteurTest.InCheck)
                     {
                         eval_coup_joué = MoteurTest.Blanc ? int.MinValue : int.MaxValue;  //Blanc <=> echec et mat noir et inverse
                     }
@@ -233,23 +221,30 @@ namespace IA_echecs
                 }
                 else
                 {
+                    //if (profondeur > 1  ) Debug.WriteLine($"On démarre la recherche du coup {coup_joué.départ} --> {coup_joué.arrivee} en profondeur {profondeur}");
                     eval_coup_joué = Search(profondeur - 1, alpha, beta, !maximiser);   //Eval max des tours précédents
+                    //if (profondeur > 1) Debug.WriteLine($"Eval du coup : {eval_coup_joué}");
                 }
+                if (profondeur == 3) Debug.WriteLine($"Evaluation finale après {coup_joué.départ} --> {coup_joué.arrivee} en profondeur = 3 : {eval_coup_joué}");
 
-                MoteurTest.Annulation_Realisation_coup(coup_joué.arrivee, coup_joué.départ, piece_prise, promotion, rb, rlb, rn, rln, compt50coups);
+                MoteurTest.Annulation_Realisation_coup(coup_joué.arrivee, coup_joué.départ, piece_prise, finie, promotion, rb, rlb, rn, rln, compt50coups);
 
                 if (maximiser == false)    //Si on est à une profondeur noire, on cherche tous les coups pour le meilleur
                 {
                     if (eval_coup_joué < beta)
                     {
+                        if (profondeur == 2) Debug.WriteLine($"Mise à jour de beta sur {coup_joué.départ} --> {coup_joué.arrivee} avec beta = {beta} et eval = {eval_coup_joué}");
                         beta = eval_coup_joué;
+                        //Debug.WriteLine($"profondeur {profondeur}, On met à jour beta : pour le coup {coup_joué.départ} --> {coup_joué.arrivee}, beta = {beta}");
                     }
                 }
                 else                    //Si on est à une profondeur blanche, on cherche le plus petit score
                 {
                     if (eval_coup_joué > alpha)    //Donc on maximise
                     {
+                        if (profondeur == 2) Debug.WriteLine($"Mise à jour de alpha sur {coup_joué.départ} --> {coup_joué.arrivee} avec alpha = {alpha} et eval = {eval_coup_joué}");
                         alpha = eval_coup_joué;
+                        //Debug.WriteLine($"profondeur {profondeur}, On met à jour alpha : pour le coup {coup_joué.départ} --> {coup_joué.arrivee}, alpha = {alpha}");
                     }
                 }
                 if (alpha >= beta)
