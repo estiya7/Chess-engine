@@ -535,10 +535,8 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             }
             EchangePieces(carré_précédent, carré);   //Fait juste l'affichage
 
-            Debug.WriteLine($"\n\nOn va appeler la fonction roque effectué depuis MainWindow avec carré = {carré} et précédent = {carré_précédent}");
             if (mot.Roque_effectué(carré, carré_précédent) == true)   //Roque pas encore effectué logiquement, on inverse les cases
             {
-                Debug.WriteLine("On fait le roque visuellement");
                 Faire_roque(carré_précédent, carré);
             }
 
@@ -551,7 +549,6 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
             {
                 if (partie_gagnée)  //Si le roi est en échec sur sa case (piece se sert qu'à avoir la couleur en int)
                 {
-                    Debug.WriteLine("La partie a été gagnée");
                     Procédure_nulle("échec et mat!!", mot.Blanc);
                 }
                 else
@@ -647,7 +644,6 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 }
                 if (carré == 6)
                 {
-                    Debug.WriteLine("On fait le roque_blanc");
                     EchangePieces(7, 5);
                 }
             }
@@ -763,7 +759,21 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
 
         public void Procédure_nulle(string raison, bool blanc)  //Transmets la couleur qui a perdu
         {
-            Debug.WriteLine("La partie est finie");
+            if (raison == "pat")
+            {
+                Debug.WriteLine("La partie est finie, il y a pat");
+            }
+            else
+            {
+                if (blanc)
+                {
+                    Debug.WriteLine("La partie est finie, les noirs ont gagnés en matant les blancs");
+                }
+                else
+                {
+                    Debug.WriteLine("La partie est finie, les blancs ont gagnés en matant les noirs");
+                }
+            }
         }
 
 
@@ -846,7 +856,7 @@ namespace Echiquier     //Seule règle non prise en compte : nulle par 3 répét
                 Debug.WriteLine($"Partie n°{partie} terminée, résultat = {résultat}");
                 Couleur = !Couleur;   //On alterne les couleurs à chaque partie
             }
-            Sauvegarde_database.Sauvegarde_affrontement(estimation.Parties, estimation.Resultats, estimation.Score, 2, 2);
+            Sauvegarde_database.Sauvegarde_affrontement(estimation.Parties, estimation.Resultats, estimation.Score, 2, 1);
             EvaluationEnCours = false;
             return true;
         }

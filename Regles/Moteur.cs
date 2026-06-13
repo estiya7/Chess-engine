@@ -569,8 +569,8 @@ namespace Regles
                 if (PotentielEnPassant > 31)
                 {
                     if (pieces[PotentielEnPassant - 7] == 6 && PotentielEnPassant != 47)
-                    {
-                        if (ClouageEnPassant(PotentielEnPassant - 7, true, p_ennemis) != 0ul)
+                    {                                                                       //Il faut pas d'echec, sauf le pion prenable par en passant
+                        if (ClouageEnPassant(PotentielEnPassant - 7, true, p_ennemis) != 0ul && (checkers & ~(1ul << (PotentielEnPassant - 8))) == 0ul)
                         {
                             Coup coup;
                             coup.départ = PotentielEnPassant - 7;
@@ -581,7 +581,7 @@ namespace Regles
                     }
                     else if (pieces[PotentielEnPassant - 9] == 6 && PotentielEnPassant != 40)
                     {
-                        if (ClouageEnPassant(PotentielEnPassant - 9, true, p_ennemis) != 0ul)
+                        if (ClouageEnPassant(PotentielEnPassant - 9, true, p_ennemis) != 0ul && (checkers & ~(1ul << (PotentielEnPassant - 8))) == 0ul)
                         {
                             Coup coup;
                             coup.départ = PotentielEnPassant - 9;
@@ -595,7 +595,7 @@ namespace Regles
                 {
                     if (pieces[PotentielEnPassant + 7] == 106 && PotentielEnPassant != 16)
                     {
-                        if (ClouageEnPassant(PotentielEnPassant + 7, false, p_ennemis) != 0ul)
+                        if (ClouageEnPassant(PotentielEnPassant + 7, false, p_ennemis) != 0ul && (checkers & ~(1ul << (PotentielEnPassant + 8))) == 0ul)
                         {
                             Coup coup;
                             coup.départ = PotentielEnPassant + 7;
@@ -606,7 +606,7 @@ namespace Regles
                     }
                     else if (pieces[PotentielEnPassant + 9] == 106 && PotentielEnPassant != 23)
                     {
-                        if (ClouageEnPassant(PotentielEnPassant + 9, false, p_ennemis) != 0ul)
+                        if (ClouageEnPassant(PotentielEnPassant + 9, false, p_ennemis) != 0ul && (checkers & ~(1ul << (PotentielEnPassant + 8))) == 0ul)
                         {
                             Coup coup;
                             coup.départ = PotentielEnPassant + 9;
@@ -1182,6 +1182,7 @@ namespace Regles
 
         public bool Realisation_coup_logique(int carré_précédent, int carré, int numéro_promotion = 0)
         {
+            //Debug.WriteLine($"On fait le coup {carré_précédent} --> {carré} avec Blanc = {Blanc}");
             int piece = pieces[carré_précédent];
             int piece_prise = pieces[carré];
             Promotion_bool = false;
@@ -1193,7 +1194,6 @@ namespace Regles
 
             EchangePieces_logique(carré_précédent, carré, piece_prise);
 
-            Debug.WriteLine($"\n\nOn appelle roque_effectué depuis le moteur avec carré = {carré} et précédent = {carré_précédent} ");
             if (Roque_effectué(carré_précédent, carré) == true)   //Vérifie si le dernier coup est le roque
             {
                 //Debug.WriteLine("Roque effectué");
@@ -1227,12 +1227,14 @@ namespace Regles
 
             EnPassantBool = false;
 
+            //Debug.WriteLine($"On va vérifier pat avec Blanc = {Blanc}");
             if (Vérification_pat())   //Aucun coup légal
             {
-                //if (vrai_coup) Debug.WriteLine($"Partie terminée !! Dernier coup : {carré_précédent} --> {carré}");
+                //Debug.WriteLine($"Partie terminée !! Dernier coup : {carré_précédent} --> {carré}");
                 PartieFinie = true;
                 if (InCheck)
                 {
+                    //Debug.WriteLine("INCheck, donc mat");
                     return true;
                 }
             }
@@ -1266,7 +1268,6 @@ namespace Regles
 
                 Bitboards_blanc[piece_active] |= 1ul << carré_arrivée;
                 Bitboards_blanc[piece_active] &= ~(1ul << carré_départ);
-                compteur_50coups = 0;
             }
             else if (piece_active > 75)
             {
@@ -1281,7 +1282,6 @@ namespace Regles
 
                 Bitboards_noir[piece_active - 100] |= 1ul << carré_arrivée;
                 Bitboards_noir[piece_active - 100] &= ~(1ul << carré_départ);
-                compteur_50coups = 0;
             }
             Pieces_long = Bitboards_blanc[0] | Bitboards_noir[0];
 
@@ -1418,13 +1418,13 @@ namespace Regles
             //Debug.WriteLine($"En passant effectué avec Blanc = {Blanc} et carré = {carré}");
             int pion_pris = 50;
 
-            if (Blanc == true)
+            if (Blanc == true && carré > 7)
             {
                 pieces[carré - 8] = pion_pris;
                 Bitboards_noir[0] &= ~(1ul << carré - 8);
                 Bitboards_noir[6] &= Bitboards_noir[0];
             }
-            else
+            else if (Blanc == false && carré < 56)
             {
                 pieces[carré + 8] = pion_pris;
                 Bitboards_blanc[0] &= ~(1ul << carré + 8);
@@ -1694,10 +1694,8 @@ namespace Regles
 
         public bool Roque_effectué(int carré_précédent, int carré)  //Vérifie si l'action est Roque
         {
-            Debug.WriteLine($"On regarde si l'action effectuée est roque (on regarde la case {carré} où le roi se situe");
             if (Math.Abs(carré_précédent - carré) == 2 && pieces[carré] % 10 == 1)
             {
-                Debug.WriteLine("Le roque a bien été effectué");
                 return true;
             }
             return false;
@@ -1789,7 +1787,7 @@ namespace Regles
         //On a inversé la couleur juste avant, si c'était un tour blanc, on verifie du point de vue noir
         public bool Vérification_pat()
         {
-            //Debug.WriteLine("On vérifie si y'a pat");
+            //Debug.WriteLine($"On vérifie si y'a pat avec checkers = {Checkers:B64} et 50coup = {compteur_50coups}");
             if (compteur_50coups >= 100)
             {
                 //Debug.WriteLine("On return true, règle des 50 coups");
@@ -1807,7 +1805,7 @@ namespace Regles
 
             while (coups == false && square < 64)  //Vérifie si une pièce de la couleur qu'on check peut bouger
             {
-                //Debug.WriteLine($"On check les légaux de la pièce en {square}");
+                //Debug.Write($"On check les légaux de la pièce en {square} : ");
                 int numéro = pieces[square];
                 if (Blanc)  //Pièce blanche
                 {
@@ -1844,36 +1842,36 @@ namespace Regles
                 square = BitOperations.TrailingZeroCount(full_pieces);
                 //Debug.WriteLine($"On calcule les légaux de l'ennemi en {square} et cela donne légaux = {attaque:B64}");
             }
-            if (Blanc == false)
+            if (Blanc == true)
             {
                 ulong coups_légaux_roi_blanc = légaux_roi(CaseRoiBlanc, CaseRoiBlanc % 8) & ~p_amis & ~attaque;
                 if (coups_légaux_roi_blanc == 0ul)  //Le roi n'a pas de coups
                 {
-                    //Debug.WriteLine("Le roi noir a des coups");
+                    //Debug.WriteLine("Le roi blanc n'a pas de coups (1er)");
                     return true;
                 }
                 coups_légaux_roi_blanc &= PatCoupIllégalDosPiece(CaseRoiBlanc);
                 if (coups_légaux_roi_blanc == 0ul)
                 {
-                    //Debug.WriteLine("Le roi noir a des coups");
+                    //Debug.WriteLine("Le roi blanc n'a pas de coups (2e)");
                     return true;
                 }
-                //Debug.WriteLine("Le roi noir a des coups");
+                //Debug.WriteLine("Le roi blanc a des coups");
                 return false;
             }
             ulong coups_légaux_roi_noir = légaux_roi(CaseRoiNoir, CaseRoiNoir % 8) & ~p_amis & ~attaque;
             if (coups_légaux_roi_noir == 0ul)
             {
-                //Debug.WriteLine("Le roi blanc n'a pas de coups");
+                //Debug.WriteLine("Le roi noir n'a pas de coups (1er)");
                 return true;
             }
             coups_légaux_roi_noir &= PatCoupIllégalDosPiece(CaseRoiBlanc);
             if (coups_légaux_roi_noir == 0ul)
             {
-                //Debug.WriteLine("Le roi blanc n'a pas des coups");
+                //Debug.WriteLine("Le roi noir n'a pas des coups (2e)");
                 return true;
             }
-            //Debug.WriteLine("Le roi blanc a des coups");
+            //Debug.WriteLine("Le roi noir a des coups");
             return false;
 
         }
@@ -1882,6 +1880,10 @@ namespace Regles
         {
             int masque = 0;
             ulong légaux = 0ul;
+            if ((Checkers & (Checkers - 1ul)) != 0ul)
+            {
+                return false;
+            }
 
             if (((1UL << i) & p_amis) != 0UL)   //La pièce est amie
             {

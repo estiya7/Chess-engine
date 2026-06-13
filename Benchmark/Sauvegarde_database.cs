@@ -100,6 +100,7 @@ namespace Benchmark
                 }
                 catch
                 {
+                    Debug.WriteLine("Numéro max de l'affrontement non trouvée, mise à 1 par défaut");
                     id_affrontement = 1;
                 }
             }
@@ -120,7 +121,7 @@ namespace Benchmark
 
             try
             {
-                id_affrontement = Convert.ToInt32(commande.ExecuteNonQuery());
+                commande.ExecuteNonQuery();
             }
             catch (Exception ex)
             {
